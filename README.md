@@ -31,10 +31,13 @@ weight_breaks：权重生成等值面分级数组
  ```
 kriging-contour是基于[kriging.js](https://github.com/oeo4b/kriging.js)修改的，原kriging.js中plot方法，将插值结果grid转换渲染到canvas，放大后等值面锯齿状严重，本修改结合d3_contour.js重新实现
 其转换方法，将grid转换成等值面的矢量geojson格式，前端地图api解析即可绘制，使用上也更方便点，无需非gis专业开发者进行像素与地理坐标转换换算。
+kriging.js渲染效果:
 ![kriging.js渲染效果](https://github.com/FreeGIS/kriging-contour/blob/master/doc/raster.jpg)
+kriging-contour渲染效果:
 ![kriging-contour渲染效果](https://github.com/FreeGIS/kriging-contour/blob/master/doc/vector.jpg)
 
 BUG
 因笔者精力有限，目前该项目存在bug，即多次刷新页面，部分时候生成的结果如下图：
-![偶尔出现的bug效果](https://github.com/FreeGIS/kriging-contour/blob/master/doc/bug.jpg)
+偶尔出现的bug效果:
+![偶尔出现的bug效果](https://github.com/FreeGIS/kriging-contour/blob/master/doc/bug.png)
 希望有同仁能有时间修改并提交仓库合并。
