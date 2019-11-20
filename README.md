@@ -37,7 +37,7 @@ kriging-contour渲染效果:
 ![kriging-contour渲染效果](https://github.com/FreeGIS/kriging-contour/blob/master/doc/vector.jpg)
 
 BUG
-因笔者精力有限，目前该项目存在bug，即多次刷新页面，部分时候生成的结果如下图：
+因笔者精力有限，目前该项目存在bug，即多次刷新页面，部分时候生成的数据会有bug，考虑是kriging.js修改过程中有缺陷。  
 偶尔出现的bug效果:
 ![偶尔出现的bug效果](https://github.com/FreeGIS/kriging-contour/blob/master/doc/bug.png)
 希望有同仁能有时间修改并提交仓库合并。
