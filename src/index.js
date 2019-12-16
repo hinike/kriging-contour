@@ -27,8 +27,7 @@ function kriging_contour(featureCollection,weight,krigingParams,breaks,clip_geom
             extent[3]=feature.geometry.coordinates[1];
     });
     let variogram=kriging.train(values,lons,lats,krigingParams.model,krigingParams.sigma2,krigingParams.alpha);
-    let polygons=[[[extent[0],extent[1]],[extent[0],extent[3]],[extent[2],extent[3]],[extent[2],extent[1]],[extent[0],extent[1]]]];
-    let grid=kriging.grid(polygons,variogram,(extent[2]-extent[0])/200,(extent[3]-extent[1])/200);
+    let grid=kriging.grid(extent,variogram,200,200);
     let contourFeatureCollection=kriging.contour(grid,breaks);
     //是否需要切割
     if(clip_geom){

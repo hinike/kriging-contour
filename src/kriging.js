@@ -436,81 +436,28 @@ kriging.variance = function (x, y, variogram) {
 };
 
 // Gridded matrices or contour paths
-kriging.grid = function (polygons, variogram, x_width, y_width) {
-	var i,
-	j,
-	k,
-	n = polygons.length;
-	if (n == 0)
-		return;
-
-	// Boundaries of polygons space
-	var xlim = [polygons[0][0][0], polygons[0][0][0]];
-	var ylim = [polygons[0][0][1], polygons[0][0][1]];
-
-	for (i = 0; i < n; i++) // Polygons
-	{
-		for (j = 0; j < polygons[i].length; j++) { // Vertices
-			if (polygons[i][j][0] < xlim[0])
-				xlim[0] = polygons[i][j][0];
-			if (polygons[i][j][0] > xlim[1])
-				xlim[1] = polygons[i][j][0];
-			if (polygons[i][j][1] < ylim[0])
-				ylim[0] = polygons[i][j][1];
-			if (polygons[i][j][1] > ylim[1])
-				ylim[1] = polygons[i][j][1];
-		}
-	}
-	// Alloc for O(n^2) space
-	var xtarget,
-	ytarget;
-	var a = new Array(2),
-	b = new Array(2);
-	var lxlim = new Array(2); // Local dimensions
-	var lylim = new Array(2); // Local dimensions
-	var x = Math.ceil((xlim[1] - xlim[0]) / x_width);
-	var y = Math.ceil((ylim[1] - ylim[0]) / y_width);
-
+kriging.grid = function (bbox,variogram,x_count,y_count) {
 	var A = [];
-	for (i = 0; i < n; i++) {
-		// Range for polygons[i]
-		lxlim[0] = polygons[i][0][0];
-		lxlim[1] = lxlim[0];
-		lylim[0] = polygons[i][0][1];
-		lylim[1] = lylim[0];
-		for (j = 1; j < polygons[i].length; j++) { // Vertices
-			if (polygons[i][j][0] < lxlim[0])
-				lxlim[0] = polygons[i][j][0];
-			if (polygons[i][j][0] > lxlim[1])
-				lxlim[1] = polygons[i][j][0];
-			if (polygons[i][j][1] < lylim[0])
-				lylim[0] = polygons[i][j][1];
-			if (polygons[i][j][1] > lylim[1])
-				lylim[1] = polygons[i][j][1];
-		}
-
-		// Loop through polygon subspace
-		a[0] = Math.floor(((lxlim[0] - ((lxlim[0] - xlim[0]) % x_width)) - xlim[0]) / x_width);
-		a[1] = Math.ceil(((lxlim[1] - ((lxlim[1] - xlim[1]) % x_width)) - xlim[0]) / x_width);
-		b[0] = Math.floor(((lylim[0] - ((lylim[0] - ylim[0]) % y_width)) - ylim[0]) / y_width);
-		b[1] = Math.ceil(((lylim[1] - ((lylim[1] - ylim[1]) % y_width)) - ylim[0]) / y_width);
-		for (j = a[0]; j < a[1]; j++) {
-			//A[j]=[];
-			for (k = b[0]; k < b[1]; k++) {
-				xtarget = xlim[0] + j * x_width;
-				ytarget = ylim[0] + k * y_width;
-				if (polygons[i].pip(xtarget, ytarget)) {
-					//A[j][k] = kriging.predict(xtarget,ytarget,variogram);
-					A.push(kriging.predict(xtarget, ytarget, variogram));
-				}
-
-			}
+	var xlim=[bbox[0],bbox[2]];
+	var ylim=[bbox[1],bbox[3]];
+	
+	var geo_width=xlim[1]-xlim[0];
+	var geo_height=ylim[1]-ylim[0];
+	var x_width=geo_width*1.0/x_count;
+	var y_width=geo_height*1.0/y_count;
+	
+	var xtarget,ytarget;
+	for (let j = 0; j < x_count; j++) {
+		for (let k =0; k <y_count; k++) {
+			xtarget = xlim[0] + j * x_width;
+			ytarget = ylim[0] + k * y_width;
+			A.push(kriging.predict(xtarget, ytarget, variogram));
 		}
 	}
 	return {
 		grid : A,
-		n : a[1],
-		m : b[1],
+		n : x_count,
+		m : y_count,
 		xlim : xlim,
 		ylim : ylim,
 		zlim : [variogram.t.min(), variogram.t.max()],
@@ -518,8 +465,27 @@ kriging.grid = function (polygons, variogram, x_width, y_width) {
 		y_width : y_width
 	};
 };
+
+
+
+//根据grid_metedate计算仿射变换参数
+kriging.getAffineParams=function(grid_metedate){
+	return {
+		a:0,
+		b:(grid_metedate.xlim[1]-grid_metedate.xlim[0])*1.0/grid_metedate.m,
+		c:(grid_metedate.ylim[1]-grid_metedate.ylim[0])*1.0/grid_metedate.n,
+		d:0,
+		k1:grid_metedate.xlim[0],
+		k2:grid_metedate.ylim[0]
+	}
+}
+
+
 //克里金生成矢量等值面
 kriging.contour = function (grid_metedate, breaks) {
+	
+	let params=kriging.getAffineParams(grid_metedate);
+	
 	let grid = grid_metedate.grid;
 	var n = grid_metedate.n;
 	var m = grid_metedate.m;
@@ -540,17 +506,10 @@ kriging.contour = function (grid_metedate, breaks) {
 						//polygon分内环和外环
 						let _polygon = polygon.map(ring => {
 									let _ring = ring.map(function (coor) {
-										let lon = grid_metedate.xlim[0] + (grid_metedate.xlim[1] - grid_metedate.xlim[0]) * (coor[0] / n);
-										let lat = grid_metedate.ylim[1] - (grid_metedate.ylim[1] - grid_metedate.ylim[0]) * (coor[1] / m);
-										let _coor = [lon, lat];
-										//d3.contours的坐标需要旋转90度转回来
-										//旋转，有点问题
-										let pt = {
-											type : 'Point',
-											coordinates : _coor
-										};
-										_coor = geom_rotate(pt, Math.PI / 2, origin);
-										return _coor;
+										//像素坐标转地理坐标
+										let x=coor[0]*params.a+coor[1]*params.b+params.k1;
+										let y=coor[0]*params.c+coor[1]*params.d+params.k2;
+										return [x,y]
 									});
 									return _ring;
 								});

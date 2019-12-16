@@ -13,120 +13,6 @@ angle:旋转角度，弧度制,
 anchor：旋转原点
 
 */
-function rotate(geometry,angle, anchor){
-	let _geometry;
-	switch(geometry.type)
-	{
-		case 'Point':
-			_geometry=point_rotate(geometry.coordinates,angle,anchor);
-			break;
-		case 'MultiPoint':
-			_geometry=multiPoint_rotate(geometry.coordinates,angle,anchor);
-			break;
-		case 'LineString':
-			_geometry=lineString_rotate(geometry.coordinates,angle,anchor);
-			break;
-		case 'MultiLineString':
-			_geometry=multiLineString_rotate(geometry.coordinates,angle,anchor);
-			break;
-		case 'Polygon':
-			_geometry=polygon_rotate(geometry.coordinates,angle,anchor);
-			break;
-		case 'MultiPolygon':
-			_geometry=multiPolygon_rotate(geometry.coordinates,angle,anchor);
-			break;
-	}
-	
-	return _geometry;
-}
-
-
-function coorRotate(coor,cos,sin, anchor){
-	//const cos = Math.cos(angle);
-	//const sin = Math.sin(angle);
-	const anchorX = anchor[0];
-	const anchorY = anchor[1];
-	const deltaX = coor[0] - anchorX;
-    const deltaY = coor[1] - anchorY;
-	let rotate_coor=[];
-    rotate_coor[0] = anchorX + deltaX * cos - deltaY * sin;
-	rotate_coor[1] = anchorY + deltaX * sin + deltaY * cos;
-	return rotate_coor;
-}
-//点旋转
-function point_rotate(coordinates,angle,anchor){
-	const cos = Math.cos(angle);
-	const sin = Math.sin(angle);
-	return coorRotate(coordinates,cos,sin,anchor);
-}
-//多点旋转
-function multiPoint_rotate(coordinates,angle,anchor){
-	const cos = Math.cos(angle);
-	const sin = Math.sin(angle);
-	let length=coordinates.length;
-	let _coors=new Array(length);
-	for(let i=0;i<length;i++){
-		_coors[i]=coorRotate(coordinates[i],cos,sin,anchor);
-	}
-	return _coors;
-}
-//线要素旋转
-function lineString_rotate(coordinates,angle,anchor){
-	const cos = Math.cos(angle);
-	const sin = Math.sin(angle);
-	let length=coordinates.length;
-	let _coors=new Array(length);
-	for(let i=0;i<length;i++){
-		_coors[i]=coorRotate(coordinates[i],cos,sin,anchor);
-	}
-	return _coors;
-}
-//多线要素旋转
-function multiLineString_rotate(coordinates,angle,anchor){
-	const cos = Math.cos(angle);
-	const sin = Math.sin(angle);
-	let group_length=coordinates.length;
-	let group=new Array(group_length);
-	for(let i=0;i<group_length;i++){
-		let singleLineString=coordinates[i];
-		let coor_length=singleLineString.length;
-		let coors=new Array(coor_length);
-		for(let j=0;j<coor_length;j++){
-			coors[j]=coorRotate(singleLineString[j],cos,sin,anchor);
-		}
-		group[i]=coors;
-	}
-	return group;
-}
-
-//面要素旋转
-function polygon_rotate(coordinates,angle,anchor){
-	const cos = Math.cos(angle);
-	const sin = Math.sin(angle);
-	let group_length=coordinates.length;
-	let group=new Array(group_length);
-	for(let i=0;i<group_length;i++){
-		let singleLineString=coordinates[i];
-		let coor_length=singleLineString.length;
-		let coors=new Array(coor_length);
-		for(let j=0;j<coor_length;j++){
-			coors[j]=coorRotate(singleLineString[j],cos,sin,anchor);
-		}
-		group[i]=coors;
-	}
-	return group;
-}
-
-
-//多面要素旋转
-function multiPolygon_rotate(coordinates,angle,anchor){
-	let group_length=coordinates.length;
-	let group=new Array(group_length);
-	for(let i=0;i<group_length;i++){
-		group[i]=polygon_rotate(coordinates,angle,anchor);
-	}
-	return group;
-}
 
 // Extend the Array class
 //数组最大值
@@ -544,79 +430,29 @@ kriging.variance = function (x, y, variogram) {
 };
 
 // Gridded matrices or contour paths
-kriging.grid = function (polygons, variogram, x_width, y_width) {
-	var i,
-	j,
-	k,
-	n = polygons.length;
-	if (n == 0)
-		return;
-
-	// Boundaries of polygons space
-	var xlim = [polygons[0][0][0], polygons[0][0][0]];
-	var ylim = [polygons[0][0][1], polygons[0][0][1]];
-
-	for (i = 0; i < n; i++) // Polygons
-	{
-		for (j = 0; j < polygons[i].length; j++) { // Vertices
-			if (polygons[i][j][0] < xlim[0])
-				xlim[0] = polygons[i][j][0];
-			if (polygons[i][j][0] > xlim[1])
-				xlim[1] = polygons[i][j][0];
-			if (polygons[i][j][1] < ylim[0])
-				ylim[0] = polygons[i][j][1];
-			if (polygons[i][j][1] > ylim[1])
-				ylim[1] = polygons[i][j][1];
-		}
-	}
-	// Alloc for O(n^2) space
-	var xtarget,
-	ytarget;
-	var a = new Array(2),
-	b = new Array(2);
-	var lxlim = new Array(2); // Local dimensions
-	var lylim = new Array(2); // Local dimensions
-
+kriging.grid = function (bbox,variogram,x_count,y_count) {
 	var A = [];
-	for (i = 0; i < n; i++) {
-		// Range for polygons[i]
-		lxlim[0] = polygons[i][0][0];
-		lxlim[1] = lxlim[0];
-		lylim[0] = polygons[i][0][1];
-		lylim[1] = lylim[0];
-		for (j = 1; j < polygons[i].length; j++) { // Vertices
-			if (polygons[i][j][0] < lxlim[0])
-				lxlim[0] = polygons[i][j][0];
-			if (polygons[i][j][0] > lxlim[1])
-				lxlim[1] = polygons[i][j][0];
-			if (polygons[i][j][1] < lylim[0])
-				lylim[0] = polygons[i][j][1];
-			if (polygons[i][j][1] > lylim[1])
-				lylim[1] = polygons[i][j][1];
-		}
-
-		// Loop through polygon subspace
-		a[0] = Math.floor(((lxlim[0] - ((lxlim[0] - xlim[0]) % x_width)) - xlim[0]) / x_width);
-		a[1] = Math.ceil(((lxlim[1] - ((lxlim[1] - xlim[1]) % x_width)) - xlim[0]) / x_width);
-		b[0] = Math.floor(((lylim[0] - ((lylim[0] - ylim[0]) % y_width)) - ylim[0]) / y_width);
-		b[1] = Math.ceil(((lylim[1] - ((lylim[1] - ylim[1]) % y_width)) - ylim[0]) / y_width);
-		for (j = a[0]; j < a[1]; j++) {
-			//A[j]=[];
-			for (k = b[0]; k < b[1]; k++) {
-				xtarget = xlim[0] + j * x_width;
-				ytarget = ylim[0] + k * y_width;
-				if (polygons[i].pip(xtarget, ytarget)) {
-					//A[j][k] = kriging.predict(xtarget,ytarget,variogram);
-					A.push(kriging.predict(xtarget, ytarget, variogram));
-				}
-
-			}
+	var xlim=[bbox[0],bbox[2]];
+	var ylim=[bbox[1],bbox[3]];
+	
+	var geo_width=xlim[1]-xlim[0];
+	var geo_height=ylim[1]-ylim[0];
+	var x_width=geo_width*1.0/x_count;
+	var y_width=geo_height*1.0/y_count;
+	
+	var xtarget,ytarget;
+	for (let j = 0; j < x_count; j++) {
+		for (let k =0; k <y_count; k++) {
+			xtarget = xlim[0] + j * x_width;
+			ytarget = ylim[0] + k * y_width;
+			A.push(kriging.predict(xtarget, ytarget, variogram));
 		}
 	}
+	
 	return {
 		grid : A,
-		n : a[1],
-		m : b[1],
+		n : x_count,
+		m : y_count,
 		xlim : xlim,
 		ylim : ylim,
 		zlim : [variogram.t.min(), variogram.t.max()],
@@ -624,8 +460,45 @@ kriging.grid = function (polygons, variogram, x_width, y_width) {
 		y_width : y_width
 	};
 };
+
+
+
+//根据grid_metedate计算仿射变换参数
+kriging.getAffineParams=function(grid_metedate){
+	return {
+		a:0,
+		b:(grid_metedate.xlim[1]-grid_metedate.xlim[0])*1.0/grid_metedate.m,
+		c:(grid_metedate.ylim[1]-grid_metedate.ylim[0])*1.0/grid_metedate.n,
+		d:0,
+		k1:grid_metedate.xlim[0],
+		k2:grid_metedate.ylim[0]
+	}
+};
+/*
+
+x1=x2*a+y2*b+k1;
+y1=x2*c+y2*d+k2;
+
+a: 0
+b: 0.0004798503621029937
+c: 0.0004951409305453147
+d: 0
+k1: 117.95092239965881
+k2: 31.95030008297144
+
+117.95092239965881, 31.95030008297144, 118.0468924720794, 32.049328269080505
+*/
+
+
+
+
+
+
 //克里金生成矢量等值面
 kriging.contour = function (grid_metedate, breaks) {
+	
+	let params=kriging.getAffineParams(grid_metedate);
+	
 	let grid = grid_metedate.grid;
 	var n = grid_metedate.n;
 	var m = grid_metedate.m;
@@ -646,17 +519,10 @@ kriging.contour = function (grid_metedate, breaks) {
 						//polygon分内环和外环
 						let _polygon = polygon.map(ring => {
 									let _ring = ring.map(function (coor) {
-										let lon = grid_metedate.xlim[0] + (grid_metedate.xlim[1] - grid_metedate.xlim[0]) * (coor[0] / n);
-										let lat = grid_metedate.ylim[1] - (grid_metedate.ylim[1] - grid_metedate.ylim[0]) * (coor[1] / m);
-										let _coor = [lon, lat];
-										//d3.contours的坐标需要旋转90度转回来
-										//旋转，有点问题
-										let pt = {
-											type : 'Point',
-											coordinates : _coor
-										};
-										_coor = rotate(pt, Math.PI / 2, origin);
-										return _coor;
+										//像素坐标转地理坐标
+										let x=coor[0]*params.a+coor[1]*params.b+params.k1;
+										let y=coor[0]*params.c+coor[1]*params.d+params.k2;
+										return [x,y]
 									});
 									return _ring;
 								});
@@ -702,8 +568,7 @@ function kriging_contour(featureCollection,weight,krigingParams,breaks,clip_geom
             extent[3]=feature.geometry.coordinates[1];
     });
     let variogram=kriging.train(values,lons,lats,krigingParams.model,krigingParams.sigma2,krigingParams.alpha);
-    let polygons=[[[extent[0],extent[1]],[extent[0],extent[3]],[extent[2],extent[3]],[extent[2],extent[1]],[extent[0],extent[1]]]];
-    let grid=kriging.grid(polygons,variogram,(extent[2]-extent[0])/200,(extent[3]-extent[1])/200);
+    let grid=kriging.grid(extent,variogram,200,200);
     let contourFeatureCollection=kriging.contour(grid,breaks);
     //是否需要切割
     if(clip_geom){

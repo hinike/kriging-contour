@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>å…‹é‡Œé‡‘æ’å€¼è½¬çŸ¢é‡</title>
+    <title>¿ËÀï½ğ²åÖµ×ªÊ¸Á¿</title>
     <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
     <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
@@ -21,31 +21,25 @@
 		let params={
 			mapCenter:[118, 32],
 			maxValue:100,
-			krigingModel:'exponential',//modelè¿˜å¯é€‰'gaussian','spherical'
+			krigingModel:'exponential',//model»¹¿ÉÑ¡'gaussian','spherical'
 			krigingSigma2:0,
 			krigingAlpha:100,
-			canvasAlpha:0.9,//canvaså›¾å±‚é€æ˜åº¦
+			canvasAlpha:0.9,//canvasÍ¼²ãÍ¸Ã÷¶È
 			colors:["#006837", "#1a9850", "#66bd63", "#a6d96a", "#d9ef8b", "#ffffbf","#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50026"]
 		};
 		let baseLayer = new ol.layer.Tile({
 			source: new ol.source.OSM()
 		});
-		let map = new ol.Map({
-			target: 'map',
-			layers: [baseLayer],
-			view: new ol.View({
-				center: params.mapCenter,
-				projection: 'EPSG:4326',
-				zoom: 16
-			})
+		
+		var ptlayer=new ol.layer.Vector({
+			source: new ol.source.Vector()
 		});
-		let view=map.getView();
-
+		
 		let source=new ol.source.Vector();
 		let layer=new ol.layer.Vector({
 			source:source,
 			style:function(feature,res){
-				//å¾—åˆ°ç‚¹çš„æƒé‡ï¼Œè®¡ç®—è½åœ¨é‚£ä¸ªè‰²åº¦å¸¦
+				//µÃµ½µãµÄÈ¨ÖØ£¬¼ÆËãÂäÔÚÄÇ¸öÉ«¶È´ø
 				let level=parseInt(feature.get('level'))/10;
 				let color=params.colors[level];
 				let style=new ol.style.Style({
@@ -60,16 +54,27 @@
 				return [style];
 			}
 		});
-		map.addLayer(layer);
-
 		
-		//æµ‹è¯•ç‚¹geojsonè¾“å…¥æ•°æ®
+		
+		
+		let map = new ol.Map({
+			target: 'map',
+			layers: [baseLayer,layer,ptlayer],
+			view: new ol.View({
+				center: params.mapCenter,
+				projection: 'EPSG:4326',
+				zoom: 16
+			})
+		});
+		let view=map.getView();
+		
+		
+		//²âÊÔµãgeojsonÊäÈëÊı¾İ
 		let dataset = {
 			"type" : "FeatureCollection",
 			"features" : []
 		};
-
-		//åˆ›å»º10ä¸ªä½ç½®éšæœºã€å±æ€§å€¼éšæœºçš„ç‰¹å¾ç‚¹
+		//´´½¨10¸öÎ»ÖÃËæ»ú¡¢ÊôĞÔÖµËæ»úµÄÌØÕ÷µã
 		for (let i = 0; i < 100; i++) {
 			let feature={
 				"type" : "Feature",
@@ -83,15 +88,25 @@
 			};
 			dataset.features.push(feature);
 		}
-		//è®¡ç®—å…‹é‡Œé‡‘ç­‰å€¼é¢
+		var format=new ol.format.GeoJSON();
+		
+		ptlayer.getSource().addFeatures(format.readFeatures(dataset));
+		console.log(ptlayer.getSource().getExtent());
+		
+		
+		//¼ÆËã¿ËÀï½ğµÈÖµÃæ
 		let kriging_contours=freegis.kriging_contour(dataset,'level',{
 			model:'exponential',
 			sigma2:0,
 			alpha:100
 		},[0,10,20,30,40,50,60,70,80,90,100]);
-		var format=new ol.format.GeoJSON();
+		
 		let features=format.readFeatures(kriging_contours);
 		source.addFeatures(features);
+		
+		
+		
+		
     </script>
   </body>
 </html>
