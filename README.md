@@ -19,6 +19,7 @@ dataset：geojson格式的featureclass数据集，feature是图形是点
 weight_field：绑定权重字段名称
 kriging_params：克里金插值参数
 weight_breaks：权重生成等值面分级数组
+clip_geom: 切割范围，geojson格式的面，可选参数
 ```
 示例代码：
 ```
