@@ -13,12 +13,12 @@ npm run pretest
 ```
 
 
-使用说明：freegis.kriging_contour(dataset,weight_field,kriging_params,weight_breaks);
+使用说明：freegis.kriging_contour(dataset,weight_field,kriging_params,weight_breaks,clip_geom);
 ```
-dataset：geojson格式的featureclass数据集，feature是图形是点
-weight_field：绑定权重字段名称
-kriging_params：克里金插值参数
-weight_breaks：权重生成等值面分级数组
+dataset：geojson格式的featureclass数据集，feature是图形是点，必填
+weight_field：绑定权重字段名称，必填
+kriging_params：克里金插值参数，必填
+weight_breaks：权重生成等值面分级数组，必填
 clip_geom: 切割范围，geojson格式的面，可选参数
 ```
 示例代码：
