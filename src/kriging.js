@@ -467,9 +467,6 @@ kriging.grid = function (bbox,variogram,x_count,y_count) {
 
 //克里金生成矢量等值面
 kriging.contour = function (grid_metedate, breaks) {
-	
-	let params=kriging.getAffineParams(grid_metedate);
-	
 	let grid = grid_metedate.grid;
 	var n = grid_metedate.n;
 	var m = grid_metedate.m;
