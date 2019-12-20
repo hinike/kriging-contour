@@ -7,13 +7,6 @@ typeof define === 'function' && define.amd ? define(['exports', 'd3-contour', '@
 
 intersect = intersect && intersect.hasOwnProperty('default') ? intersect['default'] : intersect;
 
-/*
-geometry:geojson格式的feature的geometry属性
-angle:旋转角度，弧度制,
-anchor：旋转原点
-
-*/
-
 // Extend the Array class
 //数组最大值
 Array.prototype.max = function () {
@@ -441,14 +434,13 @@ kriging.grid = function (bbox,variogram,x_count,y_count) {
 	var y_width=geo_height*1.0/y_count;
 	
 	var xtarget,ytarget;
-	for (let j = 0; j < x_count; j++) {
-		for (let k =0; k <y_count; k++) {
-			xtarget = xlim[0] + j * x_width;
-			ytarget = ylim[0] + k * y_width;
+	for (let j = 0; j < y_count; j++) {
+		for (let k =0; k <x_count; k++) {
+			xtarget = xlim[0] + k * x_width;
+			ytarget = ylim[0] + j * y_width;
 			A.push(kriging.predict(xtarget, ytarget, variogram));
 		}
 	}
-	
 	return {
 		grid : A,
 		n : x_count,
@@ -460,38 +452,6 @@ kriging.grid = function (bbox,variogram,x_count,y_count) {
 		y_width : y_width
 	};
 };
-
-
-
-//根据grid_metedate计算仿射变换参数
-kriging.getAffineParams=function(grid_metedate){
-	return {
-		a:0,
-		b:(grid_metedate.xlim[1]-grid_metedate.xlim[0])*1.0/grid_metedate.m,
-		c:(grid_metedate.ylim[1]-grid_metedate.ylim[0])*1.0/grid_metedate.n,
-		d:0,
-		k1:grid_metedate.xlim[0],
-		k2:grid_metedate.ylim[0]
-	}
-};
-/*
-
-x1=x2*a+y2*b+k1;
-y1=x2*c+y2*d+k2;
-
-a: 0
-b: 0.0004798503621029937
-c: 0.0004951409305453147
-d: 0
-k1: 117.95092239965881
-k2: 31.95030008297144
-
-117.95092239965881, 31.95030008297144, 118.0468924720794, 32.049328269080505
-*/
-
-
-
-
 
 
 //克里金生成矢量等值面
@@ -508,8 +468,6 @@ kriging.contour = function (grid_metedate, breaks) {
 		.thresholds(breaks)
 		(grid);
 	//像素坐标系换算地理坐标系
-	//图形旋转锚点
-	let origin = [(grid_metedate.xlim[1] + grid_metedate.xlim[0]) / 2, (grid_metedate.ylim[1] + grid_metedate.ylim[0]) / 2];
 	let dataset = {
 		"type" : "FeatureCollection",
 		"features" : []
@@ -520,9 +478,9 @@ kriging.contour = function (grid_metedate, breaks) {
 						let _polygon = polygon.map(ring => {
 									let _ring = ring.map(function (coor) {
 										//像素坐标转地理坐标
-										let x=coor[0]*params.a+coor[1]*params.b+params.k1;
-										let y=coor[0]*params.c+coor[1]*params.d+params.k2;
-										return [x,y]
+										let lon = grid_metedate.xlim[0] + (grid_metedate.xlim[1] - grid_metedate.xlim[0]) * (coor[0] / n);
+										let lat = grid_metedate.ylim[0] + (grid_metedate.ylim[1] - grid_metedate.ylim[0]) * (coor[1] / m);
+										return [lon,lat];
 									});
 									return _ring;
 								});
